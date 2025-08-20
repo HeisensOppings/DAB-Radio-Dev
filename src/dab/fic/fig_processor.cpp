@@ -409,6 +409,9 @@ void FIG_Processor::ProcessFIG_Type_0_Ext_2(const FIG_Header_Type_0 header, tcb:
             auto* b = &components_buf[i*nb_service_component_bytes];
             const uint8_t b0 = b[0];
             const uint8_t b1 = b[1];
+            const uint16_t unique_id = 
+                    (static_cast<uint16_t>(b0 << 8) |
+                     static_cast<uint16_t>(b1));
 
             const uint8_t tmid = (b0 & 0b11000000) >> 6;
             switch (tmid) {
@@ -427,7 +430,7 @@ void FIG_Processor::ProcessFIG_Type_0_Ext_2(const FIG_Header_Type_0 header, tcb:
                         ASCTy, subchannel_id, is_primary, ca_flag);
                     
                     m_handler->OnServiceComponent_1_StreamAudioType(
-                        sid,
+                        sid, unique_id,
                         subchannel_id, ASCTy, is_primary);
                 }
                 break;
@@ -446,7 +449,7 @@ void FIG_Processor::ProcessFIG_Type_0_Ext_2(const FIG_Header_Type_0 header, tcb:
                         DSCTy, subchannel_id, is_primary, ca_flag);
                     
                     m_handler->OnServiceComponent_1_StreamDataType(
-                        sid,
+                        sid, unique_id,
                         subchannel_id, DSCTy, is_primary);
                 }
                 break;
@@ -467,7 +470,7 @@ void FIG_Processor::ProcessFIG_Type_0_Ext_2(const FIG_Header_Type_0 header, tcb:
                         SCId, is_primary, ca_flag);
 
                     m_handler->OnServiceComponent_1_PacketDataType(
-                        sid,
+                        sid, unique_id,
                         SCId, is_primary);
                 }
                 break;

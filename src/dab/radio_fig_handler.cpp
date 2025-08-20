@@ -78,42 +78,36 @@ void Radio_FIG_Handler::OnSubchannel_1_Long(
 
 // fig 0/2 - service components type
 void Radio_FIG_Handler::OnServiceComponent_1_StreamAudioType(
-    const ServiceId service_id,
+    const ServiceId service_id, const uint16_t unique_id,
     const subchannel_id_t subchannel_id, 
     const uint8_t audio_service_type, const bool is_primary)
 {
     if (!m_updater) return;
     auto& s_u = m_updater->GetServiceUpdater(service_id);
 
-    ServiceComponentUpdater* sc_u = nullptr;
+    auto& sc_u = m_updater->GetServiceComponentUpdater_Service(service_id, unique_id);
     if (is_primary) {
-        sc_u = &m_updater->GetServiceComponentUpdater_Service(service_id, 0);
-    } else {
-        sc_u = m_updater->GetServiceComponentUpdater_Subchannel(service_id, subchannel_id);
-    } 
-    if (!sc_u) {
-        return;
+        sc_u.SetComponentID(0);
     }
 
-    sc_u->SetSubchannel(subchannel_id);
-    sc_u->SetTransportMode(TransportMode::STREAM_MODE_AUDIO);
+    sc_u.SetSubchannel(subchannel_id);
+    sc_u.SetTransportMode(TransportMode::STREAM_MODE_AUDIO);
 
     switch (audio_service_type) {
     case 0 : 
-        sc_u->SetAudioServiceType(AudioServiceType::DAB); 
+        sc_u.SetAudioServiceType(AudioServiceType::DAB);
         break;
     case 63: 
-        sc_u->SetAudioServiceType(AudioServiceType::DAB_PLUS); 
+        sc_u.SetAudioServiceType(AudioServiceType::DAB_PLUS);
         break;
     default:
         LOG_ERROR("Unknown audio service type {}", audio_service_type);
         break;
     }
-
 }
 
 void Radio_FIG_Handler::OnServiceComponent_1_StreamDataType(
-    const ServiceId service_id,
+    const ServiceId service_id, const uint16_t unique_id,
     const subchannel_id_t subchannel_id,
     const uint8_t data_service_type, const bool is_primary)
 {
@@ -121,31 +115,26 @@ void Radio_FIG_Handler::OnServiceComponent_1_StreamDataType(
 
     auto& s_u = m_updater->GetServiceUpdater(service_id);
 
-    ServiceComponentUpdater* sc_u = nullptr;
+    auto& sc_u = m_updater->GetServiceComponentUpdater_Service(service_id, unique_id);
     if (is_primary) {
-        sc_u = &m_updater->GetServiceComponentUpdater_Service(service_id, 0);
-    } else {
-        sc_u = m_updater->GetServiceComponentUpdater_Subchannel(service_id, subchannel_id);
-    }
-    if (!sc_u) {
-        return;
+        sc_u.SetComponentID(0);
     }
 
-    sc_u->SetSubchannel(subchannel_id);
-    sc_u->SetTransportMode(TransportMode::STREAM_MODE_DATA);
+    sc_u.SetSubchannel(subchannel_id);
+    sc_u.SetTransportMode(TransportMode::STREAM_MODE_DATA);
 
     switch (data_service_type) {
     case 5:
-        sc_u->SetDataServiceType(DataServiceType::TRANSPARENT_CHANNEL);
+        sc_u.SetDataServiceType(DataServiceType::TRANSPARENT_CHANNEL);
         break;
     case 24:
-        sc_u->SetDataServiceType(DataServiceType::MPEG2);
+        sc_u.SetDataServiceType(DataServiceType::MPEG2);
         break;
     case 60:
-        sc_u->SetDataServiceType(DataServiceType::MOT);
+        sc_u.SetDataServiceType(DataServiceType::MOT);
         break;
     case 63:
-        sc_u->SetDataServiceType(DataServiceType::PROPRIETARY);
+        sc_u.SetDataServiceType(DataServiceType::PROPRIETARY);
         break;
     default:
         LOG_ERROR("Unsupported data service type {}", data_service_type);
@@ -154,7 +143,7 @@ void Radio_FIG_Handler::OnServiceComponent_1_StreamDataType(
 }
 
 void Radio_FIG_Handler::OnServiceComponent_1_PacketDataType(
-    const ServiceId service_id,
+    const ServiceId service_id, const uint16_t unique_id,
     const service_component_global_id_t service_component_global_id,
     const bool is_primary)
 {
@@ -162,18 +151,12 @@ void Radio_FIG_Handler::OnServiceComponent_1_PacketDataType(
 
     auto& s_u = m_updater->GetServiceUpdater(service_id);
 
-    ServiceComponentUpdater* sc_u = nullptr;
+    auto& sc_u = m_updater->GetServiceComponentUpdater_Service(service_id, unique_id);
     if (is_primary) {
-        sc_u = &m_updater->GetServiceComponentUpdater_Service(service_id, 0);
-    } else {
-        sc_u = m_updater->GetServiceComponentUpdater_GlobalID(service_component_global_id);
+        sc_u.SetComponentID(0);
     }
-    if (!sc_u) {
-        return;
-    }
-
-    sc_u->SetTransportMode(TransportMode::PACKET_MODE_DATA);
-    sc_u->SetGlobalID(service_component_global_id);
+    sc_u.SetTransportMode(TransportMode::PACKET_MODE_DATA);
+    sc_u.SetGlobalID(service_component_global_id);
 }
 
 // fig 0/3 - service component packet data type
@@ -331,8 +314,9 @@ void Radio_FIG_Handler::OnServiceComponent_4_Short_Definition(
     if (!m_updater) return;
     auto& s_u = m_updater->GetServiceUpdater(service_id);
 
-    auto& sc_u = m_updater->GetServiceComponentUpdater_Service(service_id, service_component_id);
-    sc_u.SetSubchannel(subchannel_id);
+    auto* sc_u = m_updater->GetServiceComponentUpdater_Subchannel(service_id, subchannel_id);
+    if (!sc_u) return;
+    sc_u->SetComponentID(service_component_id);
 }
 
 // For packet mode service components that have a global id
@@ -343,8 +327,10 @@ void Radio_FIG_Handler::OnServiceComponent_4_Long_Definition(
 {
     if (!m_updater) return;
     auto& s_u = m_updater->GetServiceUpdater(service_id);
-    auto& sc_u = m_updater->GetServiceComponentUpdater_Service(service_id, service_component_id);
-    sc_u.SetGlobalID(service_component_global_id);
+
+    auto* sc_u = m_updater->GetServiceComponentUpdater_GlobalID(service_component_global_id);
+    if (!sc_u) return;
+    sc_u->SetComponentID(service_component_id);
 }
 
 // fig 0/9 - Ensemble country, LTO (local time offset), international table
@@ -432,8 +418,9 @@ void Radio_FIG_Handler::OnServiceComponent_5_UserApplication(
     if (!m_updater) return;
 
     auto& s_u = m_updater->GetServiceUpdater(service_id);
-    auto& sc_u = m_updater->GetServiceComponentUpdater_Service(service_id, service_component_id);
-    sc_u.AddUserApplicationType(app_type);
+    auto* sc_u = m_updater->GetServiceComponentUpdater_ComponentID(service_id, service_component_id);
+    if (!sc_u) return;
+    sc_u->AddUserApplicationType(app_type);
 
     LOG_MESSAGE("service_id={:X} component_id={} app_type={} N={}", service_id.value, service_component_id, app_type, N);
 
@@ -580,9 +567,10 @@ void Radio_FIG_Handler::OnService_2_Label(
     s_u.SetShortLabel(short_label);
 
     // according fig 1/4, the primary service component label is the same as the service label
-    auto& sc_u = m_updater->GetServiceComponentUpdater_Service(service_id, 0);
-    sc_u.SetLabel(label);
-    sc_u.SetShortLabel(short_label);
+    auto* sc_u = m_updater->GetServiceComponentUpdater_ComponentID(service_id, 0);
+    if (!sc_u) return;
+    sc_u->SetLabel(label);
+    sc_u->SetShortLabel(short_label);
 }
 
 // fig 1/4 - Non-primary service component label
@@ -599,7 +587,8 @@ void Radio_FIG_Handler::OnServiceComponent_6_Label(
         LOG_ERROR("Invalid SCIdS=0 received for a non-primary service component label");
         return;
     }
-    auto& sc_u = m_updater->GetServiceComponentUpdater_Service(service_id, service_component_id);
-    sc_u.SetLabel(label);
-    sc_u.SetShortLabel(short_label);
+    auto* sc_u = m_updater->GetServiceComponentUpdater_ComponentID(service_id, service_component_id);
+    if (!sc_u) return;
+    sc_u->SetLabel(label);
+    sc_u->SetShortLabel(short_label);
 }

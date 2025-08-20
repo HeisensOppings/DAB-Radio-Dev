@@ -154,11 +154,10 @@ struct Service {
 };
 
 struct ServiceComponent {
-    // NOTE: Two methods to identify a service component
-    // Method 1: service_id/SCIdS used together for stream mode
     ServiceId service_id;
-    service_component_id_t component_id;         
-    // Method 2: SCId global identifier used for packet mode
+    // NOTE: Create a component in FIG0/2 only using unique_id to avoid dummy components
+    uint16_t unique_id = 0;                                             // Service comp. description 16bits field (TMId [ASCTy|DSCTy SubChId] | [SCId] P/S CA flag)
+    service_component_id_t component_id = 0xFF;                         // required
     service_component_global_id_t global_id = 0xFFFF;                   // required for transport packet data
     subchannel_id_t subchannel_id = 0;                                  // required 
     packet_addr_t packet_address = 0;                                   // required for transport packet data
@@ -172,8 +171,8 @@ struct ServiceComponent {
     bool is_complete = false;
     explicit ServiceComponent(
         const ServiceId _service_id, 
-        const service_component_id_t _component_id
-    ): service_id(_service_id), component_id(_component_id) {}
+        const uint16_t _unique_id
+    ): service_id(_service_id), unique_id(_unique_id) {}
 };
 
 struct Subchannel {

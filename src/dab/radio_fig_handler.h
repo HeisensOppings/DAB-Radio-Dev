@@ -37,15 +37,15 @@ public:
         const uint16_t subchannel_size) override;
     // fig 0/2 - service components type
     void OnServiceComponent_1_StreamAudioType(
-        const ServiceId service_id,
+        const ServiceId service_id, const uint16_t unique_id,
         const subchannel_id_t subchannel_id, 
         const uint8_t audio_service_type, const bool is_primary) override;
     void OnServiceComponent_1_StreamDataType(
-        const ServiceId service_id,
+        const ServiceId service_id, const uint16_t unique_id,
         const subchannel_id_t subchannel_id,
         const uint8_t data_service_type, const bool is_primary) override;
     void OnServiceComponent_1_PacketDataType(
-        const ServiceId service_id,
+        const ServiceId service_id, const uint16_t unique_id,
         const service_component_global_id_t service_component_global_id,
         const bool is_primary) override;
     // fig 0/3 - service component packet data type

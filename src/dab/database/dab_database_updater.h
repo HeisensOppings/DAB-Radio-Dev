@@ -157,6 +157,7 @@ public:
     UpdateResult SetPacketAddr(const packet_addr_t packet_addr);
     UpdateResult SetLanguage(const language_id_t language);
     UpdateResult AddUserApplicationType(const user_application_type_t application_type);
+    UpdateResult SetComponentID(const service_component_id_t component_id);
     UpdateResult SetGlobalID(const service_component_global_id_t global_id);
     auto& GetData() { return m_db.service_components[m_index]; }
 private:
@@ -282,13 +283,14 @@ public:
     explicit DAB_Database_Updater();
     EnsembleUpdater& GetEnsembleUpdater() { return *(m_ensemble_updater.get()); }
     ServiceUpdater& GetServiceUpdater(const ServiceId service_id);
-    ServiceComponentUpdater& GetServiceComponentUpdater_Service(const ServiceId service_id, const service_component_id_t component_id);
+    ServiceComponentUpdater& GetServiceComponentUpdater_Service(const ServiceId service_id, const uint16_t unique_id);
     SubchannelUpdater& GetSubchannelUpdater(const subchannel_id_t subchannel_id);
     LinkServiceUpdater& GetLinkServiceUpdater(const lsn_t link_service_number);
     FM_ServiceUpdater& GetFMServiceUpdater(const fm_id_t RDS_PI_code);
     DRM_ServiceUpdater& GetDRMServiceUpdater(const drm_id_t drm_code);
     AMSS_ServiceUpdater& GetAMSS_ServiceUpdater(const amss_id_t amss_code);
     OtherEnsembleUpdater& GetOtherEnsemble(const EnsembleId ensemble_id);
+    ServiceComponentUpdater* GetServiceComponentUpdater_ComponentID(const ServiceId service_id, const service_component_id_t component_id);
     ServiceComponentUpdater* GetServiceComponentUpdater_GlobalID(const service_component_global_id_t global_id);
     ServiceComponentUpdater* GetServiceComponentUpdater_Subchannel(const ServiceId service_id, const subchannel_id_t subchannel_id);
     template <typename Fn>

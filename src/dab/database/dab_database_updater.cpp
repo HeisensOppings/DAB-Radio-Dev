@@ -91,20 +91,21 @@ bool ServiceUpdater::IsComplete() {
 }
 
 // Service component form
-const uint16_t SERVICE_COMPONENT_FLAG_LABEL                 = 0b1000000000;
-const uint16_t SERVICE_COMPONENT_FLAG_TRANSPORT_MODE        = 0b0100000000;
-const uint16_t SERVICE_COMPONENT_FLAG_AUDIO_TYPE            = 0b0010000000;
-const uint16_t SERVICE_COMPONENT_FLAG_DATA_TYPE             = 0b0001000000;
-const uint16_t SERVICE_COMPONENT_FLAG_SUBCHANNEL            = 0b0000100000;
-const uint16_t SERVICE_COMPONENT_FLAG_GLOBAL_ID             = 0b0000010000;
-const uint16_t SERVICE_COMPONENT_FLAG_SHORT_LABEL           = 0b0000001000;
-const uint16_t SERVICE_COMPONENT_FLAG_PACKET_ADDRESS        = 0b0000000100;
-const uint16_t SERVICE_COMPONENT_FLAG_LANGUAGE              = 0b0000000010;
-const uint16_t SERVICE_COMPONENT_FLAG_APPLICATION_TYPE      = 0b0000000001;
+const uint16_t SERVICE_COMPONENT_FLAG_COMPONENT_ID          = 0b100000000000;
+const uint16_t SERVICE_COMPONENT_FLAG_LABEL                 = 0b010000000000;
+const uint16_t SERVICE_COMPONENT_FLAG_TRANSPORT_MODE        = 0b001000000000;
+const uint16_t SERVICE_COMPONENT_FLAG_AUDIO_TYPE            = 0b000100000000;
+const uint16_t SERVICE_COMPONENT_FLAG_DATA_TYPE             = 0b000010000000;
+const uint16_t SERVICE_COMPONENT_FLAG_SUBCHANNEL            = 0b000001000000;
+const uint16_t SERVICE_COMPONENT_FLAG_GLOBAL_ID             = 0b000000100000;
+const uint16_t SERVICE_COMPONENT_FLAG_SHORT_LABEL           = 0b000000010000;
+const uint16_t SERVICE_COMPONENT_FLAG_PACKET_ADDRESS        = 0b000000001000;
+const uint16_t SERVICE_COMPONENT_FLAG_LANGUAGE              = 0b000000000100;
+const uint16_t SERVICE_COMPONENT_FLAG_APPLICATION_TYPE      = 0b000000000010;
 // A different set of required fields applies to stream audio, stream data, and packet data components.
-const uint16_t SERVICE_COMPONENT_FLAG_REQUIRED_STREAM_AUDIO = 0b0110100000;
-const uint16_t SERVICE_COMPONENT_FLAG_REQUIRED_STREAM_DATA  = 0b0101100000;
-const uint16_t SERVICE_COMPONENT_FLAG_REQUIRED_PACKET_DATA  = 0b0101100101;
+const uint16_t SERVICE_COMPONENT_FLAG_REQUIRED_STREAM_AUDIO = 0b001101000000;
+const uint16_t SERVICE_COMPONENT_FLAG_REQUIRED_STREAM_DATA  = 0b001011000000;
+const uint16_t SERVICE_COMPONENT_FLAG_REQUIRED_PACKET_DATA  = 0b001011001010;
 
 UpdateResult ServiceComponentUpdater::SetLabel(std::string_view label) {
     return UpdateField(GetData().label, label, SERVICE_COMPONENT_FLAG_LABEL);
@@ -152,6 +153,10 @@ UpdateResult ServiceComponentUpdater::AddUserApplicationType(const user_applicat
     OnComplete();
     OnUpdate();
     return UpdateResult::SUCCESS;
+}
+
+UpdateResult ServiceComponentUpdater::SetComponentID(const service_component_id_t component_id) {
+    return UpdateField(GetData().component_id, component_id, SERVICE_COMPONENT_FLAG_COMPONENT_ID);
 }
 
 UpdateResult ServiceComponentUpdater::SetGlobalID(const service_component_global_id_t global_id) {
@@ -379,15 +384,15 @@ ServiceUpdater& DAB_Database_Updater::GetServiceUpdater(const ServiceId service_
 }
 
 ServiceComponentUpdater& DAB_Database_Updater::GetServiceComponentUpdater_Service(
-    const ServiceId service_id, const service_component_id_t component_id) 
+    const ServiceId service_id, const uint16_t unique_id) 
 {
     const auto service_uuid = service_id.get_unique_identifier();
     return find_or_insert_updater(
         m_db->service_components, m_service_component_updaters,
-        [service_uuid, component_id](const auto& e) { 
-            return (e.service_id.get_unique_identifier() == service_uuid) && (e.component_id == component_id); 
+        [service_uuid, unique_id](const auto& e) { 
+            return (e.service_id.get_unique_identifier() == service_uuid) && (e.unique_id == unique_id); 
         },
-        service_id, component_id
+        service_id, unique_id
     );
 }
 
@@ -449,6 +454,18 @@ OtherEnsembleUpdater& DAB_Database_Updater::GetOtherEnsemble(const EnsembleId en
             return e.id.get_unique_identifier() == ensemble_uuid;
         },
         ensemble_id
+    );
+}
+
+ServiceComponentUpdater* DAB_Database_Updater::GetServiceComponentUpdater_ComponentID(
+    const ServiceId service_id, const service_component_id_t component_id)
+{
+    const auto service_uuid = service_id.get_unique_identifier();
+    return find_updater(
+        m_db->service_components, m_service_component_updaters,
+        [service_uuid, component_id](const auto& e) {
+            return (e.service_id.get_unique_identifier() == service_uuid) && (e.component_id == component_id);
+        }
     );
 }
 
