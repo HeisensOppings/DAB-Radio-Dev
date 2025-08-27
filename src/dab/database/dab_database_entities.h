@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <string>
 #include <vector>
+#include <map>
 
 #include "./dab_database_types.h"
 
@@ -56,6 +57,16 @@ enum class UserApplicationType: uint16_t {  // Value passed in 11bit field
     UNDEFINED = 0xFFFF,
 };
 
+struct ExtendedLabel {
+    // NOTE: FIG 2 labels can be in UTF-8 or UCS2, and are sent in segments.
+    uint8_t toggle_flag = 0;
+    std::map<int, std::vector<uint8_t>> segments;
+    // define the total number of segments minus 1 used to carry the extended label data field.
+    uint8_t segment_count = 0;
+    uint8_t charset = 0xFF;
+    std::string label = "";
+};
+
 // NOTE: A valid database entry exists when all the required fields are set
 // The required fields constraint is also followed in the dab_database_updater.cpp
 // when we are regenerating the database from the FIC (fast information channel)
@@ -84,6 +95,7 @@ struct Ensemble {
     extended_country_id_t extended_country_code = 0;
     std::string label;
     std::string short_label;
+    ExtendedLabel extended_label;                       // optional: fig 2/0 provides this
     uint8_t nb_services = 0;                            // optional: fig 0/7 provides this
     uint16_t reconfiguration_count = 0;                 // optional: fig 0/7 provides this
     int8_t local_time_offset = 0;                       // Value of this shall be +- 155 (LTO is +-15.5 hours)
@@ -148,7 +160,10 @@ struct Service {
     ServiceId id; // required
     std::string label;
     std::string short_label;
-    programme_id_t programme_type = 0;    
+    ExtendedLabel extended_label;                       // optional: fig 2/0 provides this
+    programme_id_t programme_type = 0;
+    asu_flags_t asu_flags = 0;
+    std::vector<cluster_id_t> cluster_ids;    
     bool is_complete = false;
     explicit Service(const ServiceId _id) : id(_id) {}
 };
@@ -161,8 +176,10 @@ struct ServiceComponent {
     service_component_global_id_t global_id = 0xFFFF;                   // required for transport packet data
     subchannel_id_t subchannel_id = 0;                                  // required 
     packet_addr_t packet_address = 0;                                   // required for transport packet data
+    dg_flag_t dg_flag = 0;                                              // required for transport packet data
     std::string label;
     std::string short_label;
+    ExtendedLabel extended_label;                                       // optional: fig 2/0 provides this
     language_id_t language = 0;
     std::vector<user_application_type_t> application_types;             // required for transport stream/packet data. (optional) for stream audio (XPAD often used for slideshows)
     TransportMode transport_mode = TransportMode::UNDEFINED;            // required

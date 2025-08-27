@@ -116,12 +116,24 @@ void RenderEnsemble(BasicRadio& radio) {
                 ImGui::PopID();\
             }\
 
+            #define HELP_MARKER(markerName, desc) {\
+                ImGui::TextDisabled("%s", markerName);\
+                if (ImGui::BeginItemTooltip())\
+                {\
+                    ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);\
+                    ImGui::TextUnformatted(desc);\
+                    ImGui::PopTextWrapPos();\
+                    ImGui::EndTooltip();\
+                }\
+            }\
+
             int row_id = 0;
             auto& db = radio.GetDatabase();
             auto& ensemble = db.ensemble;
             const float LTO = float(ensemble.local_time_offset) / 10.0f;
             FIELD_MACRO("Name", "%.*s", int(ensemble.label.length()), ensemble.label.c_str());
             FIELD_MACRO("Short Name", "%.*s", int(ensemble.short_label.length()), ensemble.short_label.c_str());
+            FIELD_MACRO("Extended Name", "%.*s", int(ensemble.extended_label.label.length()), ensemble.extended_label.label.c_str());
             FIELD_MACRO("ID", "0x%04X", ensemble.id.get_unique_identifier());
             FIELD_MACRO("Country", "%s (0x%02X.%01X)", 
                 GetCountryString(ensemble.extended_country_code, ensemble.id.get_country_code()),
@@ -133,6 +145,111 @@ void RenderEnsemble(BasicRadio& radio) {
             #undef FIELD_MACRO
 
             ImGui::EndTable();
+
+            ImGui::SeparatorText("Ensemble Information");
+            ImGui::SetWindowFontScale(0.8f);
+            auto BeginTableWithHeaders = [&](const char* id,
+                                            std::initializer_list<const char*> headers,
+                                            ImGuiTableFlags flags = ImGuiTableFlags_Borders 
+                                                                | ImGuiTableFlags_RowBg 
+                                                                | ImGuiTableFlags_Resizable) -> bool
+            {
+                if (ImGui::BeginTable(id, (int)headers.size(), flags)) {
+                    for (auto* name : headers)
+                        ImGui::TableSetupColumn(name);
+                    ImGui::TableHeadersRow();
+                    return true;
+                }
+                return false;
+            };
+            auto &Services = db.services;
+            auto &ServiceComponents = db.service_components;
+            auto &Subchannels = db.subchannels;
+            if (ImGui::TreeNodeEx("Services", ImGuiTreeNodeFlags_DefaultOpen)) {
+                HELP_MARKER("(Country?)", "See ts_101756 Table 3~7");
+                ImGui::SameLine();
+                HELP_MARKER("(ProgramType?)", "See ts_101756 Table 12~13");
+                if (BeginTableWithHeaders("services", {"SId","Label","ShortLabel","Country","ProgramType"})) {
+                    for (auto& s : db.services) {
+                        ImGui::TableNextRow();
+                        ImGui::TableNextColumn(); ImGui::Text("%u", s.id.value);
+                        ImGui::TableNextColumn(); ImGui::Text("%s", s.label.c_str());
+                        ImGui::TableNextColumn(); ImGui::Text("%s", s.short_label.c_str());
+                        ImGui::TableNextColumn(); ImGui::Text("%d", s.id.get_country_code());
+                        ImGui::TableNextColumn(); ImGui::Text("%d", s.programme_type);
+                    }
+                    ImGui::EndTable();
+                }
+                ImGui::TreePop();
+            }
+            if (ImGui::TreeNodeEx("Components", ImGuiTreeNodeFlags_DefaultOpen)) {
+                HELP_MARKER("(TMid?)", "Transport Mechanism Identifier. See en_300401 Figure 21\nTMId=00 (MSC stream audio)\nTMId=01 (MSC stream data)\nTMId=11 (MSC packet data)");
+                ImGui::SameLine();
+                HELP_MARKER("(ASCTy/DSCTy?)", "Audio and Data Service Component Type. See ts_101756 Table 2a~2b");
+                ImGui::SameLine();
+                HELP_MARKER("(UATy?)", "User Application Types. See ts_101756 Table 16");
+                if (BeginTableWithHeaders("Components", {"TMid", "SId", "SCIdS", "SubChId", "ASCTy", "DSCTy", "UATy", "SCId", "PacketAddress"})) {
+                    for (auto &comp : ServiceComponents)
+                    {
+                        auto appTypesStr = [&]() {
+                            std::string s;
+                            for (auto v : comp.application_types) {
+                                s += std::to_string((int)v) + " ";
+                            }
+                            return s;
+                        }();
+                        ImGui::TableNextRow();
+                        ImGui::TableNextColumn(); ImGui::Text("%d", (int)comp.transport_mode);
+                        ImGui::TableNextColumn(); ImGui::Text("%u", comp.service_id.value);
+                        ImGui::TableNextColumn(); ImGui::Text("%d", comp.component_id);
+                        ImGui::TableNextColumn(); ImGui::Text("%d", (int)comp.subchannel_id);
+                        ImGui::TableSetColumnIndex(6);
+                        ImGui::Text("%s", appTypesStr.c_str());
+                        if (comp.transport_mode == TransportMode::STREAM_MODE_AUDIO)
+                        {
+                            ImGui::TableSetColumnIndex(4);
+                            ImGui::Text("%d", (int)comp.audio_service_type);
+                        }
+                        else if (comp.transport_mode == TransportMode::STREAM_MODE_DATA)
+                        {
+                            ImGui::TableSetColumnIndex(5);
+                            ImGui::Text("%d", (int)comp.data_service_type);
+                        }
+                        else if (comp.transport_mode == TransportMode::PACKET_MODE_DATA)
+                        {
+                            ImGui::TableSetColumnIndex(5);
+                            ImGui::Text("%d", (int)comp.data_service_type);
+                            ImGui::TableSetColumnIndex(7);
+                            ImGui::Text("%d", (int)comp.global_id);
+                            ImGui::TableSetColumnIndex(8);
+                            ImGui::Text("%d", (int)comp.packet_address);
+                        }
+                    }
+                    ImGui::EndTable();
+                }
+                ImGui::TreePop();
+            }
+            if (ImGui::TreeNodeEx("SubChannels", ImGuiTreeNodeFlags_DefaultOpen)) {
+                if (BeginTableWithHeaders("SubChannels", {"subChId", "startCU", "numCU", "fecScheme","protection", "bitrate(kbit/s)"})) {
+                    for (const auto &subch : Subchannels)
+                    {
+                        const auto prot_label = GetSubchannelProtectionLabel(subch);
+                        const uint32_t bitrate_kbps = GetSubchannelBitrate(subch);
+                        ImGui::TableNextRow();
+                        ImGui::TableNextColumn(); ImGui::Text("%d", subch.id);
+                        ImGui::TableNextColumn(); ImGui::Text("%d", subch.start_address);
+                        ImGui::TableNextColumn(); ImGui::Text("%d", subch.length);
+                        ImGui::TableNextColumn();
+                        if(subch.fec_scheme != FEC_Scheme::UNDEFINED)
+                            ImGui::Text("%d", (int)subch.fec_scheme);
+                        ImGui::TableNextColumn(); ImGui::Text("%.*s", int(prot_label.length()), prot_label.c_str());
+                        ImGui::TableNextColumn(); ImGui::Text("%u", bitrate_kbps);
+                    }
+                    ImGui::EndTable();
+                }
+                ImGui::TreePop();
+            }
+            ImGui::SetWindowFontScale(1.0f);
         }
     }
     ImGui::End();

@@ -17,15 +17,16 @@ bool insert_if_unique(std::vector<T>& vec, T value) {
 }
 
 // Ensemble form
-const uint16_t ENSEMBLE_FLAG_ID          = 0b100000000;
-const uint16_t ENSEMBLE_FLAG_ECC         = 0b010000000;
-const uint16_t ENSEMBLE_FLAG_LABEL       = 0b000100000;
-const uint16_t ENSEMBLE_FLAG_SHORT_LABEL = 0b000010000;
-const uint16_t ENSEMBLE_FLAG_NB_SERVICES = 0b000001000;
-const uint16_t ENSEMBLE_FLAG_RCOUNT      = 0b000000100;
-const uint16_t ENSEMBLE_FLAG_LTO         = 0b000000010;
-const uint16_t ENSEMBLE_FLAG_INTER_TABLE = 0b000000001;
-const uint16_t ENSEMBLE_FLAG_REQUIRED    = 0b100000001;
+const uint16_t ENSEMBLE_FLAG_ID             = 0b1000000000;
+const uint16_t ENSEMBLE_FLAG_ECC            = 0b0100000000;
+const uint16_t ENSEMBLE_FLAG_LABEL          = 0b0001000000;
+const uint16_t ENSEMBLE_FLAG_SHORT_LABEL    = 0b0000100000;
+const uint16_t ENSEMBLE_FLAG_NB_SERVICES    = 0b0000010000;
+const uint16_t ENSEMBLE_FLAG_RCOUNT         = 0b0000001000;
+const uint16_t ENSEMBLE_FLAG_LTO            = 0b0000000100;
+const uint16_t ENSEMBLE_FLAG_INTER_TABLE    = 0b0000000010;
+const uint16_t ENSEMBLE_FLAG_EXTENDED_LABEL = 0b0000000001;
+const uint16_t ENSEMBLE_FLAG_REQUIRED       = 0b1000000010;
 
 UpdateResult EnsembleUpdater::SetID(const EnsembleId ensemble_id) {
     return UpdateField(GetData().id, ensemble_id, ENSEMBLE_FLAG_ID);
@@ -46,6 +47,10 @@ UpdateResult EnsembleUpdater::SetLabel(std::string_view label) {
 
 UpdateResult EnsembleUpdater::SetShortLabel(std::string_view short_label) {
     return UpdateField(GetData().short_label, short_label, ENSEMBLE_FLAG_SHORT_LABEL);
+}
+
+UpdateResult EnsembleUpdater::SetExtendedLabel(std::string_view extended_label) {
+    return UpdateField(GetData().extended_label.label, extended_label, ENSEMBLE_FLAG_EXTENDED_LABEL);
 }
 
 UpdateResult EnsembleUpdater::SetNumberServices(const uint8_t nb_services) {
@@ -69,11 +74,13 @@ bool EnsembleUpdater::IsComplete() {
 }
 
 // Service form
-const uint8_t SERVICE_FLAG_LABEL        = 0b00100000;
-const uint8_t SERVICE_FLAG_PROGRAM_TYPE = 0b00010000;
-const uint8_t SERVICE_FLAG_SHORT_LABEL  = 0b00001000;
-const uint8_t SERVICE_FLAG_SHORT_LABEL  = 0b00001000;
-const uint8_t SERVICE_FLAG_REQUIRED     = 0b00000000;
+const uint8_t SERVICE_FLAG_LABEL            = 0b00100000;
+const uint8_t SERVICE_FLAG_PROGRAM_TYPE     = 0b00010000;
+const uint8_t SERVICE_FLAG_SHORT_LABEL      = 0b00001000;
+const uint8_t SERVICE_FLAG_EXTENDED_LABEL   = 0b00000100;
+const uint8_t SERVICE_FLAG_ASU_FLAG         = 0b00000010;
+const uint8_t SERVICE_FLAG_CLUSTER_IDS      = 0b00000001;
+const uint8_t SERVICE_FLAG_REQUIRED         = 0b00000000;
 
 UpdateResult ServiceUpdater::SetLabel(std::string_view label) {
     return UpdateField(GetData().label, label, SERVICE_FLAG_LABEL);
@@ -83,8 +90,26 @@ UpdateResult ServiceUpdater::SetShortLabel(std::string_view short_label) {
     return UpdateField(GetData().short_label, short_label, SERVICE_FLAG_SHORT_LABEL);
 }
 
+UpdateResult ServiceUpdater::SetExtendedLabel(std::string_view extended_label) {
+    return UpdateField(GetData().extended_label.label, extended_label, SERVICE_FLAG_EXTENDED_LABEL);
+}
+
 UpdateResult ServiceUpdater::SetProgrammeType(const programme_id_t programme_type) {
     return UpdateField(GetData().programme_type, programme_type, SERVICE_FLAG_PROGRAM_TYPE);
+}
+
+UpdateResult ServiceUpdater::SetASuFlags(const asu_flags_t asu_flags)
+{
+    return UpdateField(GetData().asu_flags, asu_flags, SERVICE_FLAG_ASU_FLAG);
+}
+
+UpdateResult ServiceUpdater::AddClusterID(const cluster_id_t cluster_id)
+{
+    if (!insert_if_unique(GetData().cluster_ids, cluster_id)) return UpdateResult::NO_CHANGE;
+    m_dirty_field |= SERVICE_FLAG_CLUSTER_IDS;
+    OnComplete();
+    OnUpdate();
+    return UpdateResult::SUCCESS;
 }
 
 bool ServiceUpdater::IsComplete() {
@@ -92,21 +117,23 @@ bool ServiceUpdater::IsComplete() {
 }
 
 // Service component form
-const uint16_t SERVICE_COMPONENT_FLAG_COMPONENT_ID          = 0b100000000000;
-const uint16_t SERVICE_COMPONENT_FLAG_LABEL                 = 0b010000000000;
-const uint16_t SERVICE_COMPONENT_FLAG_TRANSPORT_MODE        = 0b001000000000;
-const uint16_t SERVICE_COMPONENT_FLAG_AUDIO_TYPE            = 0b000100000000;
-const uint16_t SERVICE_COMPONENT_FLAG_DATA_TYPE             = 0b000010000000;
-const uint16_t SERVICE_COMPONENT_FLAG_SUBCHANNEL            = 0b000001000000;
-const uint16_t SERVICE_COMPONENT_FLAG_GLOBAL_ID             = 0b000000100000;
-const uint16_t SERVICE_COMPONENT_FLAG_SHORT_LABEL           = 0b000000010000;
-const uint16_t SERVICE_COMPONENT_FLAG_PACKET_ADDRESS        = 0b000000001000;
-const uint16_t SERVICE_COMPONENT_FLAG_LANGUAGE              = 0b000000000100;
-const uint16_t SERVICE_COMPONENT_FLAG_APPLICATION_TYPE      = 0b000000000010;
+const uint16_t SERVICE_COMPONENT_FLAG_COMPONENT_ID          = 0b1000000000000;
+const uint16_t SERVICE_COMPONENT_FLAG_LABEL                 = 0b0100000000000;
+const uint16_t SERVICE_COMPONENT_FLAG_TRANSPORT_MODE        = 0b0010000000000;
+const uint16_t SERVICE_COMPONENT_FLAG_AUDIO_TYPE            = 0b0001000000000;
+const uint16_t SERVICE_COMPONENT_FLAG_DATA_TYPE             = 0b0000100000000;
+const uint16_t SERVICE_COMPONENT_FLAG_SUBCHANNEL            = 0b0000010000000;
+const uint16_t SERVICE_COMPONENT_FLAG_GLOBAL_ID             = 0b0000001000000;
+const uint16_t SERVICE_COMPONENT_FLAG_SHORT_LABEL           = 0b0000000100000;
+const uint16_t SERVICE_COMPONENT_FLAG_PACKET_ADDRESS        = 0b0000000010000;
+const uint16_t SERVICE_COMPONENT_FLAG_DG_FLAG               = 0b0000000001000;
+const uint16_t SERVICE_COMPONENT_FLAG_LANGUAGE              = 0b0000000000100;
+const uint16_t SERVICE_COMPONENT_FLAG_APPLICATION_TYPE      = 0b0000000000010;
+const uint16_t SERVICE_COMPONENT_FLAG_EXTENDED_LABEL        = 0b0000000000001;
 // A different set of required fields applies to stream audio, stream data, and packet data components.
-const uint16_t SERVICE_COMPONENT_FLAG_REQUIRED_STREAM_AUDIO = 0b001101000000;
-const uint16_t SERVICE_COMPONENT_FLAG_REQUIRED_STREAM_DATA  = 0b001011000000;
-const uint16_t SERVICE_COMPONENT_FLAG_REQUIRED_PACKET_DATA  = 0b001011001010;
+const uint16_t SERVICE_COMPONENT_FLAG_REQUIRED_STREAM_AUDIO = 0b0011010000000;
+const uint16_t SERVICE_COMPONENT_FLAG_REQUIRED_STREAM_DATA  = 0b0010110000000;
+const uint16_t SERVICE_COMPONENT_FLAG_REQUIRED_PACKET_DATA  = 0b0010110011010;
 
 UpdateResult ServiceComponentUpdater::SetLabel(std::string_view label) {
     return UpdateField(GetData().label, label, SERVICE_COMPONENT_FLAG_LABEL);
@@ -114,6 +141,10 @@ UpdateResult ServiceComponentUpdater::SetLabel(std::string_view label) {
 
 UpdateResult ServiceComponentUpdater::SetShortLabel(std::string_view short_label) {
     return UpdateField(GetData().short_label, short_label, SERVICE_COMPONENT_FLAG_SHORT_LABEL);
+}
+
+UpdateResult ServiceComponentUpdater::SetExtendedLabel(std::string_view extended_label) {
+    return UpdateField(GetData().extended_label.label, extended_label, SERVICE_COMPONENT_FLAG_EXTENDED_LABEL);
 }
 
 UpdateResult ServiceComponentUpdater::SetTransportMode(const TransportMode transport_mode) {
@@ -142,6 +173,10 @@ UpdateResult ServiceComponentUpdater::SetSubchannel(const subchannel_id_t subcha
 
 UpdateResult ServiceComponentUpdater::SetPacketAddr(const packet_addr_t packet_addr) {
     return UpdateField(GetData().packet_address, packet_addr, SERVICE_COMPONENT_FLAG_PACKET_ADDRESS);
+}
+
+UpdateResult ServiceComponentUpdater::SetDGFlag(const dg_flag_t dg_flag) {
+    return UpdateField(GetData().dg_flag, dg_flag, SERVICE_COMPONENT_FLAG_DG_FLAG);
 }
 
 UpdateResult ServiceComponentUpdater::SetLanguage(const language_id_t language) {

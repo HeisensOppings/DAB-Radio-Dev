@@ -47,6 +47,8 @@ private:
     void ProcessFIG_Type_0_Ext_13(const FIG_Header_Type_0 header, tcb::span<const uint8_t> buf);
     void ProcessFIG_Type_0_Ext_14(const FIG_Header_Type_0 header, tcb::span<const uint8_t> buf);
     void ProcessFIG_Type_0_Ext_17(const FIG_Header_Type_0 header, tcb::span<const uint8_t> buf);
+    void ProcessFIG_Type_0_Ext_18(const FIG_Header_Type_0 header, tcb::span<const uint8_t> buf);
+    void ProcessFIG_Type_0_Ext_19(const FIG_Header_Type_0 header, tcb::span<const uint8_t> buf);
     void ProcessFIG_Type_0_Ext_21(const FIG_Header_Type_0 header, tcb::span<const uint8_t> buf);
     void ProcessFIG_Type_0_Ext_24(const FIG_Header_Type_0 header, tcb::span<const uint8_t> buf);
     // handle fig 1/X
@@ -54,4 +56,9 @@ private:
     void ProcessFIG_Type_1_Ext_1 (const FIG_Header_Type_1 header, tcb::span<const uint8_t> buf);
     void ProcessFIG_Type_1_Ext_4 (const FIG_Header_Type_1 header, tcb::span<const uint8_t> buf);
     void ProcessFIG_Type_1_Ext_5 (const FIG_Header_Type_1 header, tcb::span<const uint8_t> buf);
+    // handle fig 2/X
+    void ProcessFIG_Type_2_Ext_0 (const FIG_Header_Type_2 header, tcb::span<const uint8_t> buf);
+    void ProcessFIG_Type_2_Ext_1 (const FIG_Header_Type_2 header, tcb::span<const uint8_t> buf);
+    void ProcessFIG_Type_2_Ext_4 (const FIG_Header_Type_2 header, tcb::span<const uint8_t> buf);
+    void ProcessFIG_Type_2_Ext_5 (const FIG_Header_Type_2 header, tcb::span<const uint8_t> buf);
 };

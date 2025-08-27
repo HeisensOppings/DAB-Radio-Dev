@@ -45,7 +45,8 @@ public:
         const service_component_global_id_t service_component_global_id,
         const subchannel_id_t subchannel_id,
         const uint8_t data_service_type, 
-        const uint16_t packet_address) = 0;
+        const uint16_t packet_address,
+        const uint8_t dg_flag) = 0;
     // fig 0/4 - service component stream mode with conditional access
     virtual void OnServiceComponent_2_StreamConditionalAccess(
         const subchannel_id_t subchannel_id, const uint16_t CAOrg) = 0;
@@ -116,6 +117,11 @@ public:
     virtual void OnService_1_ProgrammeType(
         const ServiceId service_id,
         const uint8_t programme_type) = 0;
+    // fig 0/18 - Announcement support
+    virtual void OnService_2_AnnouncementSupport(
+        const ServiceId service_id,
+        const asu_flags_t asu_flags,
+        const cluster_id_t* buf, const uint8_t N) = 0;
     // fig 0/21 - Alternate frequency information
     virtual void OnFrequencyInformation_1_Ensemble(
         const EnsembleId ensemble_id,
@@ -142,7 +148,7 @@ public:
         std::string_view label, std::string_view short_label) = 0;
     // fig 1/1 - Short form service identifier label
     // fig 1/5 - Long form service identifier label
-    virtual void OnService_2_Label(
+    virtual void OnService_3_Label(
         const ServiceId service_id,
         std::string_view label, std::string_view short_label) = 0;
     // fig 1/4 - Non-primary service component label
@@ -150,4 +156,21 @@ public:
         const ServiceId service_id,
         const service_component_id_t service_component_id,
         std::string_view label, std::string_view short_label) = 0;
+    // fig 2/0 - Ensemble extended label
+    virtual void OnEnsemble_4_ExtendedLabel(
+        const EnsembleId ensemble_id,
+        const uint8_t toggle_flag, const uint8_t segment_index, const uint8_t rfu,
+        const uint8_t* buf, const uint8_t N) = 0;
+    // fig 2/1 - Short form service identifier label
+    // fig 2/5 - Long form service identifier label
+    virtual void OnService_4_ExtendedLabel(
+        const ServiceId service_id,
+        const uint8_t toggle_flag, const uint8_t segment_index, const uint8_t rfu,
+        const uint8_t* buf, const uint8_t N) = 0;
+    // fig 2/4 - Non-primary service component label
+    virtual void OnServiceComponent_7_ExtendedLabel(
+        const ServiceId service_id,
+        const service_component_id_t service_component_id,
+         const uint8_t toggle_flag, const uint8_t segment_index, const uint8_t rfu,
+        const uint8_t* buf, const uint8_t N) = 0;
 };

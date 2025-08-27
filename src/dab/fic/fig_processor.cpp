@@ -173,22 +173,24 @@ void FIG_Processor::ProcessFIG_Type_0(tcb::span<const uint8_t> buf) {
     auto field_buf = buf.subspan(1);
 
     switch (extension) {
-    case 0 : ProcessFIG_Type_0_Ext_0 (header, field_buf); break;
-    case 1 : ProcessFIG_Type_0_Ext_1 (header, field_buf); break;
-    case 2 : ProcessFIG_Type_0_Ext_2 (header, field_buf); break;
-    case 3 : ProcessFIG_Type_0_Ext_3 (header, field_buf); break;
-    case 4 : ProcessFIG_Type_0_Ext_4 (header, field_buf); break;
-    case 5 : ProcessFIG_Type_0_Ext_5 (header, field_buf); break;
-    case 6 : ProcessFIG_Type_0_Ext_6 (header, field_buf); break;
-    case 7 : ProcessFIG_Type_0_Ext_7 (header, field_buf); break;
-    case 8 : ProcessFIG_Type_0_Ext_8 (header, field_buf); break;
-    case 9 : ProcessFIG_Type_0_Ext_9 (header, field_buf); break;
-    case 10: ProcessFIG_Type_0_Ext_10(header, field_buf); break;
-    case 13: ProcessFIG_Type_0_Ext_13(header, field_buf); break;
-    case 14: ProcessFIG_Type_0_Ext_14(header, field_buf); break;
-    case 17: ProcessFIG_Type_0_Ext_17(header, field_buf); break;
-    case 21: ProcessFIG_Type_0_Ext_21(header, field_buf); break;
-    case 24: ProcessFIG_Type_0_Ext_24(header, field_buf); break;
+    case 0 : ProcessFIG_Type_0_Ext_0 (header, field_buf); break;    // Ensemble information
+    case 1 : ProcessFIG_Type_0_Ext_1 (header, field_buf); break;    // Sub-channel organization
+    case 2 : ProcessFIG_Type_0_Ext_2 (header, field_buf); break;    // Service orgranization
+    case 3 : ProcessFIG_Type_0_Ext_3 (header, field_buf); break;    // Service component in packet mode
+    case 4 : ProcessFIG_Type_0_Ext_4 (header, field_buf); break;    // Serivce component with CA in stream mode
+    case 5 : ProcessFIG_Type_0_Ext_5 (header, field_buf); break;    // Service component language
+    case 6 : ProcessFIG_Type_0_Ext_6 (header, field_buf); break;    // Service linking information
+    case 7 : ProcessFIG_Type_0_Ext_7 (header, field_buf); break;    // Configuration information
+    case 8 : ProcessFIG_Type_0_Ext_8 (header, field_buf); break;    // Service component global definition
+    case 9 : ProcessFIG_Type_0_Ext_9 (header, field_buf); break;    // Country, LTO & International table
+    case 10: ProcessFIG_Type_0_Ext_10(header, field_buf); break;    // Data & time
+    case 13: ProcessFIG_Type_0_Ext_13(header, field_buf); break;    // User Application information
+    case 14: ProcessFIG_Type_0_Ext_14(header, field_buf); break;    // FEC sub-channel organization
+    case 17: ProcessFIG_Type_0_Ext_17(header, field_buf); break;    // Programme Type(PTy)
+    case 18: ProcessFIG_Type_0_Ext_18(header, field_buf); break;    // Announcement support
+    case 19: ProcessFIG_Type_0_Ext_19(header, field_buf); break;    // Announcement switching
+    case 21: ProcessFIG_Type_0_Ext_21(header, field_buf); break;    // Frequency information(FI)
+    case 24: ProcessFIG_Type_0_Ext_24(header, field_buf); break;    // OE services
     default:
         LOG_MESSAGE("fig 0/{} Unsupported", extension);
         break;
@@ -213,10 +215,10 @@ void FIG_Processor::ProcessFIG_Type_1(tcb::span<const uint8_t> buf) {
     auto field_buf = buf.subspan(1);
 
     switch (extension) {
-    case 0: ProcessFIG_Type_1_Ext_0(header, field_buf); break;
-    case 1: ProcessFIG_Type_1_Ext_1(header, field_buf); break;
-    case 4: ProcessFIG_Type_1_Ext_4(header, field_buf); break;
-    case 5: ProcessFIG_Type_1_Ext_5(header, field_buf); break;
+    case 0: ProcessFIG_Type_1_Ext_0(header, field_buf); break;  // Ensemble label
+    case 1: ProcessFIG_Type_1_Ext_1(header, field_buf); break;  // Programme service label
+    case 4: ProcessFIG_Type_1_Ext_4(header, field_buf); break;  // Service component label
+    case 5: ProcessFIG_Type_1_Ext_5(header, field_buf); break;  // Data service label
     default:
         LOG_MESSAGE("fig 1/{} L={} Unsupported", extension, field_buf.size());
         break;
@@ -230,14 +232,23 @@ void FIG_Processor::ProcessFIG_Type_2(tcb::span<const uint8_t> buf) {
     }
 
     const uint8_t descriptor = buf[0];
-    // FIG_Header_Type_2 header;
-    // header.toggle_flag      = (descriptor & 0b10000000) >> 7;
-    // header.segment_index    = (descriptor & 0b01110000) >> 4;
-    // header.rfu              = (descriptor & 0b00001000) >> 3;
+    FIG_Header_Type_2 header;
+    header.toggle_flag      = (descriptor & 0b10000000) >> 7;
+    header.segment_index    = (descriptor & 0b01110000) >> 4;
+    header.rfu              = (descriptor & 0b00001000) >> 3;
     const uint8_t extension = (descriptor & 0b00000111) >> 0;
 
     auto field_buf = buf.subspan(1);
-    LOG_MESSAGE("fig 2/{} L={} Unsupported", extension, field_buf.size());
+
+    switch (extension) {
+    case 0: ProcessFIG_Type_2_Ext_0(header, field_buf); break;  // Ensemble label
+    case 1: ProcessFIG_Type_2_Ext_1(header, field_buf); break;  // Programme service label
+    case 4: ProcessFIG_Type_2_Ext_4(header, field_buf); break;  // Service component label
+    case 5: ProcessFIG_Type_2_Ext_5(header, field_buf); break;  // Data service label
+    default:
+        LOG_MESSAGE("fig 2/{} L={} Unsupported", extension, field_buf.size());
+        break;
+    }
 }
 
 void FIG_Processor::ProcessFIG_Type_6(tcb::span<const uint8_t> buf) {
@@ -539,7 +550,7 @@ void FIG_Processor::ProcessFIG_Type_0_Ext_3(const FIG_Header_Type_0 header, tcb:
             subchannel_id, packet_address, CAOrg);
         
         m_handler->OnServiceComponent_2_PacketDataType(
-            SCId, subchannel_id, DSCTy, packet_address);
+            SCId, subchannel_id, DSCTy, packet_address, dg_flag);
         
         curr_byte += nb_data_length;
         curr_component++;
@@ -1364,6 +1375,89 @@ void FIG_Processor::ProcessFIG_Type_0_Ext_17(
     }
 }
 
+void FIG_Processor::ProcessFIG_Type_0_Ext_18(const FIG_Header_Type_0 header, tcb::span<const uint8_t> buf) {
+    const int N = (int)buf.size();
+    const int nb_header_bytes = 5;
+
+    int curr_byte = 0;
+    while (curr_byte < N) {
+        const auto b = buf.subspan(curr_byte);
+        const int nb_remain_bytes = N-curr_byte;
+        if (nb_header_bytes > nb_remain_bytes) {
+            LOG_ERROR("fig 0/18 Insufficient length for header bytes ({}/{})",
+                nb_header_bytes, nb_remain_bytes);
+            return;
+        }
+        
+        const auto sid = get_service_id(b.first(2));
+        uint16_t asu_flags = (static_cast<uint16_t>(b[2] << 8)) |
+                                                   (b[3]);
+        const uint8_t Rfa =                        (b[4] & 0b11111000);
+        const uint8_t nb_clusters =                (b[4] & 0b00000111);
+
+        const uint8_t nb_length_bytes = nb_header_bytes + nb_clusters;
+
+        if (nb_length_bytes > nb_remain_bytes) {
+            LOG_ERROR("fig 0/18 Message not long enough for tail data ({}/{})", 
+                nb_length_bytes, nb_remain_bytes);
+            return;
+        }
+        
+        std::vector<uint8_t> cluster_ids(nb_clusters);
+        std::string cluster_id_list;
+        for (int i = 0; i < nb_clusters; i++)  {
+            cluster_ids[i] = b[nb_header_bytes + i];
+            cluster_id_list += std::to_string(cluster_ids[i]) + ((i < (nb_clusters-1)) ? "," : "");
+        }
+
+        LOG_MESSAGE("fig 0/18 service_id={:X} asu_flags={} Rfa={} nb_clusters={}, clusters={}",
+            sid.value,
+            asu_flags,
+            Rfa, 
+            nb_clusters,
+            cluster_id_list);
+
+        m_handler->OnService_2_AnnouncementSupport(
+            sid,
+            asu_flags, cluster_ids.data(), nb_clusters
+        );
+
+        curr_byte += nb_length_bytes;
+    }
+}
+
+void FIG_Processor::ProcessFIG_Type_0_Ext_19(const FIG_Header_Type_0 header, tcb::span<const uint8_t> buf) {
+    const int N = (int)buf.size();
+    const int nb_data_bytes = 4;
+
+    int curr_byte = 0;
+    while (curr_byte < N) {
+        const auto b = buf.subspan(curr_byte);
+        const int nb_remain_bytes = N-curr_byte;
+        if (nb_data_bytes > nb_remain_bytes) {
+            LOG_ERROR("fig 0/19 Insufficient length for data bytes ({}/{})",
+                nb_data_bytes, nb_remain_bytes);
+            return;
+        }
+
+        const uint8_t cluster_id =                       (b[0]);
+        const uint16_t asw_flags = (static_cast<uint16_t>(b[1] << 8)) |
+                                                         (b[2]);
+        const uint8_t new_flags =                        (b[3] & 0b10000000) >> 7;
+        const uint8_t Rfa =                              (b[3] & 0b01000000) >> 6;
+        const uint8_t subchannel_id =                    (b[3] & 0b00111111);
+
+        LOG_MESSAGE("fig 0/19 cluster_id={:>3} asw_flags={} new_flags={} Rfa={} subchannel_id={}",
+            cluster_id,
+            asw_flags,
+            new_flags,
+            Rfa,
+            subchannel_id);
+
+        curr_byte += nb_data_bytes;
+    }
+}
+
 // Frequency information
 void FIG_Processor::ProcessFIG_Type_0_Ext_21(const FIG_Header_Type_0 header, tcb::span<const uint8_t> buf) {
     const int N = (int)buf.size();
@@ -1693,7 +1787,7 @@ void FIG_Processor::ProcessFIG_Type_1_Ext_1(const FIG_Header_Type_1 header, tcb:
         sid.value,
         flag_field, label, short_label);
 
-    m_handler->OnService_2_Label(
+    m_handler->OnService_3_Label(
         sid,
         label, short_label);
 }
@@ -1789,7 +1883,106 @@ void FIG_Processor::ProcessFIG_Type_1_Ext_5(const FIG_Header_Type_1 header, tcb:
         sid.value,
         flag_field, label, short_label);
     
-    m_handler->OnService_2_Label(
+    m_handler->OnService_3_Label(
         sid,
         label, short_label);
+}
+
+// Ensemble label
+void FIG_Processor::ProcessFIG_Type_2_Ext_0(const FIG_Header_Type_2 header, tcb::span<const uint8_t> buf) {
+    const int N = (int)buf.size();
+    const int nb_eid_bytes = 2;
+
+    if (N < nb_eid_bytes) {
+        LOG_ERROR("fig 2/0 Expected at least {} byte got {} bytes",
+            nb_eid_bytes, N);
+        return;
+    }
+
+    const auto eid = get_ensemble_id(buf.first(nb_eid_bytes));
+    const auto extended_label_data_field = buf.subspan(nb_eid_bytes);
+
+    m_handler->OnEnsemble_4_ExtendedLabel(
+        eid,
+        header.toggle_flag, header.segment_index, header.rfu,
+        extended_label_data_field.data(), extended_label_data_field.size()
+    );
+}
+
+// Short form service identifier label
+void FIG_Processor::ProcessFIG_Type_2_Ext_1(const FIG_Header_Type_2 header, tcb::span<const uint8_t> buf) {
+    const int N = (int)buf.size();
+    const int nb_sid_bytes = 2;
+
+    if (N < nb_sid_bytes) {
+        LOG_ERROR("fig 2/1 Expected at least {} bytes got {} bytes",
+            nb_sid_bytes, N);
+        return;
+    }
+
+    const auto sid = get_service_id(buf.first(nb_sid_bytes));
+    const auto extended_label_data_field = buf.subspan(nb_sid_bytes);
+    
+    m_handler->OnService_4_ExtendedLabel(
+        sid,
+        header.toggle_flag, header.segment_index, header.rfu,
+        extended_label_data_field.data(), extended_label_data_field.size()
+    );
+}
+
+// Service component label (non primary)
+void FIG_Processor::ProcessFIG_Type_2_Ext_4(const FIG_Header_Type_2 header, tcb::span<const uint8_t> buf) {
+    const int N = (int)buf.size();
+    const int nb_header_bytes = 1;
+
+    if (N < nb_header_bytes) {
+        LOG_ERROR("fig 2/4 Expected at least {} byte for header got {} bytes",
+            nb_header_bytes, N);
+        return;
+    }
+
+    const uint8_t descriptor = buf[0];
+    const uint8_t pd =    (descriptor & 0b10000000) >> 7;
+    // const uint8_t Rfa =   (descriptor & 0b01110000) >> 4;
+    const uint8_t SCIdS = (descriptor & 0b00001111) >> 0;
+
+    const int nb_sid_bytes = pd ? 4 : 2;
+    const int nb_expected_bytes = nb_header_bytes + nb_sid_bytes;
+
+    if (N != nb_expected_bytes) {
+        LOG_ERROR("fig 2/4 Expected {} bytes got {} bytes",
+            nb_expected_bytes, N);
+        return;
+    }
+
+    const auto service_buf = tcb::span<const uint8_t>(&buf[nb_header_bytes], (size_t)nb_sid_bytes);
+    const auto sid = get_service_id(service_buf.first(nb_sid_bytes));
+    const auto extended_label_data_field = service_buf.subspan(nb_sid_bytes);
+
+    m_handler->OnServiceComponent_7_ExtendedLabel(
+        sid, SCIdS,
+        header.toggle_flag, header.segment_index, header.rfu,
+        extended_label_data_field.data(), extended_label_data_field.size()
+    );
+}
+
+// Long form service identifier label
+void FIG_Processor::ProcessFIG_Type_2_Ext_5(const FIG_Header_Type_2 header, tcb::span<const uint8_t> buf) {
+    const int N = (int)buf.size();
+    const int nb_sid_bytes = 4;
+
+    if (N < nb_sid_bytes) {
+        LOG_ERROR("fig 2/5 Expected at least {} bytes got {} bytes",
+            nb_sid_bytes, N);
+        return;
+    }
+
+    const auto sid = get_service_id(buf.first(nb_sid_bytes));
+    const auto extended_label_data_field = buf.subspan(nb_sid_bytes);
+    
+    m_handler->OnService_4_ExtendedLabel(
+        sid,
+        header.toggle_flag, header.segment_index, header.rfu,
+        extended_label_data_field.data(), extended_label_data_field.size()
+    );
 }

@@ -8,6 +8,7 @@
 #include "./database/dab_database_updater.h"
 #include "./database/dab_database_entities.h"
 #include "database/dab_database_types.h"
+#include "./constants/charsets.h"
 #define TAG "radio-fig-handler"
 static auto _logger = DAB_LOG_REGISTER(TAG);
 #define LOG_MESSAGE(...) DAB_LOG_MESSAGE(TAG, fmt::format(__VA_ARGS__))
@@ -164,7 +165,8 @@ void Radio_FIG_Handler::OnServiceComponent_2_PacketDataType(
     const service_component_global_id_t service_component_global_id,
     const subchannel_id_t subchannel_id,
     const uint8_t data_service_type, 
-    const uint16_t packet_address)
+    const uint16_t packet_address,
+    const uint8_t dg_flag)
 {
     if (!m_updater) return;
     ServiceComponentUpdater* sc_u = nullptr;
@@ -265,7 +267,7 @@ void Radio_FIG_Handler::OnServiceLinkage_1_ServiceID(
 {
     if (!m_updater) return;
     auto& l_u = m_updater->GetLinkServiceUpdater(linkage_set_number);
-    auto& s_u = m_updater->GetServiceUpdater(service_id);
+    // auto& s_u = m_updater->GetServiceUpdater(service_id);
 
     l_u.SetServiceId(service_id);
     l_u.SetIsActiveLink(is_active_link);
@@ -288,7 +290,7 @@ void Radio_FIG_Handler::OnServiceLinkage_1_RDS_PI_ID(
     fm_u.SetLinkageSetNumber(linkage_set_number);
 
     const auto service_id = l_u.GetData().service_id;
-    auto& s_u = m_updater->GetServiceUpdater(service_id);
+    // auto& s_u = m_updater->GetServiceUpdater(service_id);
 }
 
 void Radio_FIG_Handler::OnServiceLinkage_1_DRM_ID(
@@ -483,12 +485,27 @@ void Radio_FIG_Handler::OnSubchannel_2_FEC(
 void Radio_FIG_Handler::OnService_1_ProgrammeType(
     const ServiceId service_id,
     const uint8_t programme_type)
-    const uint8_t programme_type)
 {
     if (!m_updater) return;
 
     auto& s_u = m_updater->GetServiceUpdater(service_id);
     s_u.SetProgrammeType(programme_type);
+}
+
+// fig 0/18 - Announcement support
+void Radio_FIG_Handler::OnService_2_AnnouncementSupport(
+    const ServiceId service_id,
+    const asu_flags_t asu_flags,
+    const cluster_id_t* buf, const uint8_t N)
+{
+    if (!m_updater) return;
+
+    auto& s_u = m_updater->GetServiceUpdater(service_id);
+    s_u.SetASuFlags(asu_flags);
+
+    for (uint8_t i = 0; i < N; i++) {
+        s_u.AddClusterID(buf[i]);
+    }
 }
 
 // fig 0/21 - Alternate frequency information
@@ -569,7 +586,7 @@ void Radio_FIG_Handler::OnEnsemble_3_Label(
 
 // fig 1/1 - Short form service identifier label
 // fig 1/5 - Long form service identifier label
-void Radio_FIG_Handler::OnService_2_Label(
+void Radio_FIG_Handler::OnService_3_Label(
     const ServiceId service_id,
     std::string_view label, std::string_view short_label)
 {
@@ -604,4 +621,128 @@ void Radio_FIG_Handler::OnServiceComponent_6_Label(
     if (!sc_u) return;
     sc_u->SetLabel(label);
     sc_u->SetShortLabel(short_label);
+}
+
+static std::string append_segment(const uint8_t toggle_flag, const uint8_t segment_index, const uint8_t rfu,
+    const uint8_t* buf, const uint8_t N,
+    ExtendedLabel& ext_label)
+{
+    if (ext_label.toggle_flag != toggle_flag) {
+        ext_label.segments.clear();
+        ext_label.charset = 0xFF;
+        ext_label.toggle_flag = toggle_flag;
+    }
+
+    if (segment_index == 0) {
+        const int nb_header_bytes = 3;
+
+        if (N < nb_header_bytes) {
+            LOG_ERROR("fig 2/0 Extend label data field Expected at least {} byte for header got {} bytes",
+                nb_header_bytes, N);
+            return "";
+        }
+
+        const uint8_t encoding_flag = ((buf[0] & 0b10000000) >> 7);
+        // define the total number of segments minus 1 used to carry the extended label data field.
+        const uint8_t segment_count = ((buf[0] & 0b01110000) >> 4) + 1;
+
+        ext_label.segment_count = segment_count;
+
+        // NOTE: ETSI TS 103 176 V2.2.1
+        // Rfu bit is set to 1, it indicates that the 16-bit Character flag field is absent from the 
+        // extended label data field and that the 4-bit Rfa field is replaced by the text control field
+        if(rfu == 0)
+        {
+            const uint8_t rfa =                   (buf[0] & 0b00001111);
+            const uint16_t character_flag_field = (buf[1] << 8) | buf[2];
+        } else {
+            const uint8_t text_control =          (buf[0] & 0b00001111);
+        }
+
+        ext_label.charset = encoding_flag ? 0x06 // UnicodeUcs2
+                                          : 0x0F;// UnicodeUtf8
+    }
+    const uint8_t* character_field = buf + (rfu ? 1 : 3);
+    const uint8_t character_field_size = N - (rfu ? 1 : 3);
+    if(character_field_size == 0)
+    {
+        LOG_ERROR("fig 2/0 Extend label data field Expected at least 1 byte for character field got 0 bytes");
+        return "";
+    }
+
+    ext_label.segments[segment_index] = std::vector<uint8_t>(character_field, character_field + character_field_size);
+    if(ext_label.segments.size() == ext_label.segment_count && ext_label.segment_count > 0)
+    {
+        std::vector<uint8_t> segments_cat;
+        for (size_t i = 0; i < ext_label.segment_count; ++i) {
+            auto it = ext_label.segments.find(i);
+            if (it == ext_label.segments.end()) {
+                ext_label.label.clear();
+                return "";
+            }
+            segments_cat.insert(segments_cat.end(), it->second.begin(), it->second.end());
+        }
+
+        std::string label = convert_charset_to_utf8({segments_cat.data(), segments_cat.size()}, ext_label.charset);
+        return label;
+    }
+
+    return "";
+}
+
+// fig 2/0 - Ensemble extended label
+void Radio_FIG_Handler::OnEnsemble_4_ExtendedLabel(
+    const EnsembleId ensemble_id,
+    const uint8_t toggle_flag, const uint8_t segment_index, const uint8_t rfu,
+    const uint8_t* buf, const uint8_t N)
+{
+    if (!m_updater) return;
+    auto& e_u = m_updater->GetEnsembleUpdater(); 
+    e_u.SetID(ensemble_id);
+
+    auto label = append_segment(toggle_flag, segment_index, rfu, buf, N, e_u.GetData().extended_label);
+    if(!label.empty())
+        e_u.SetExtendedLabel(label);
+}
+
+// fig 2/1 - Short form service identifier label
+// fig 2/5 - Long form service identifier label
+void Radio_FIG_Handler::OnService_4_ExtendedLabel(
+    const ServiceId service_id,
+    const uint8_t toggle_flag, const uint8_t segment_index, const uint8_t rfu,
+    const uint8_t* buf, const uint8_t N)
+{
+    if (!m_updater) return;
+    auto& s_u = m_updater->GetServiceUpdater(service_id);
+    auto label = append_segment(toggle_flag, segment_index, rfu, buf, N, s_u.GetData().extended_label);
+    if(!label.empty())
+        s_u.SetExtendedLabel(label);
+
+    // according fig 1/4, the primary service component label is the same as the service label
+    auto* sc_u = m_updater->GetServiceComponentUpdater_ComponentID(service_id, 0);
+    if (!sc_u) return;
+    label = append_segment(toggle_flag, segment_index, rfu, buf, N, sc_u->GetData().extended_label);
+    if(!label.empty())
+        sc_u->SetExtendedLabel(label);
+}
+
+// fig 2/4 - Non-primary service component label
+void Radio_FIG_Handler::OnServiceComponent_7_ExtendedLabel(
+    const ServiceId service_id,
+    const service_component_id_t service_component_id,
+        const uint8_t toggle_flag, const uint8_t segment_index, const uint8_t rfu,
+    const uint8_t* buf, const uint8_t N)
+{
+    if (!m_updater) return;
+    auto& s_u = m_updater->GetServiceUpdater(service_id);
+
+    if (service_component_id == 0) {
+        LOG_ERROR("Invalid SCIdS=0 received for a non-primary service component extended label");
+        return;
+    }
+    auto* sc_u = m_updater->GetServiceComponentUpdater_ComponentID(service_id, service_component_id);
+    if (!sc_u) return;
+    auto label = append_segment(toggle_flag, segment_index, rfu, buf, N, sc_u->GetData().extended_label);
+    if(!label.empty())
+        sc_u->SetExtendedLabel(label);
 }
