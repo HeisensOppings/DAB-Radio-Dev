@@ -96,7 +96,10 @@ void RenderSimple_ServiceList(BasicRadio& radio, BasicRadioViewController& contr
                 const bool is_selected = (
                     controller.selected_service.has_value() &&
                     controller.selected_service.value().get_unique_identifier() == service.id.get_unique_identifier());
-                auto label = fmt::format("{}###{}", service.label.empty() ? "[Unknown]" : service.label, service.id.get_unique_identifier());
+                if (service.label.empty()) {
+                    continue;
+                }
+                auto label = fmt::format("{}###{}", service.label, service.id.get_unique_identifier());
                 if (ImGui::Selectable(label.c_str(), is_selected)) {
                     controller.selected_service = is_selected ? std::nullopt : std::optional(service.id);
                 }
@@ -480,12 +483,31 @@ void RenderSimple_Basic_DAB_Channel_Status(Basic_DAB_Channel& channel) {
     ImGui::EndGroup();
 
     const auto& audio_params_opt = channel.GetAudioParams();
+
     if (audio_params_opt.has_value()) {
-        auto& params = audio_params_opt.value();
-        ImGui::Text("Codec: %dHz %s %dkb/s MP2", 
-            params.sample_rate, 
-            params.is_stereo ? "Stereo" : "Mono",  
-            params.bitrate_kbps);
+        const auto& params = audio_params_opt.value();
+        const char* mpeg_version = nullptr;
+        switch (params.mpeg_version) {
+        case MP2_Audio_Decoder::MPEG_Version::MPEG_1_0: mpeg_version = "MPEG 1.0"; break;
+        case MP2_Audio_Decoder::MPEG_Version::MPEG_2_0: mpeg_version = "MPEG 2.0"; break;
+        case MP2_Audio_Decoder::MPEG_Version::MPEG_2_5: mpeg_version = "MPEG 2.5"; break;
+        default: mpeg_version = "?";
+        }
+
+        const char* mpeg_layer = nullptr;
+        switch (params.mpeg_layer) {
+        case MP2_Audio_Decoder::MPEG_Layer::LAYER_I: mpeg_layer = "Layer I"; break;
+        case MP2_Audio_Decoder::MPEG_Layer::LAYER_II: mpeg_layer = "Layer II"; break;
+        case MP2_Audio_Decoder::MPEG_Layer::LAYER_III: mpeg_layer = "Layer III"; break;
+        default: mpeg_layer = "?";
+        }
+
+        ImGui::Text("Codec: %zuHz %s %zukb/s %s %s",
+            params.sample_rate,
+            params.is_stereo ? "Stereo" : "Mono",
+            params.bitrate_kbps,
+            mpeg_version, mpeg_layer
+        );
     }
 }
 

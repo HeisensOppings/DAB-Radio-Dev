@@ -216,6 +216,12 @@ void Radio_FIG_Handler::OnServiceComponent_3_Short_Language(
             sc_u.SetLanguage(language);
         }
     );
+    m_updater->ForEachServiceComponentUpdater_Subchannel(
+        subchannel_id,
+        [language](ServiceComponentUpdater& sc_u) {
+            sc_u.SetLanguage(language);
+        }
+    );
 }
 
 // For packet mode service components that have a global id
@@ -224,6 +230,12 @@ void Radio_FIG_Handler::OnServiceComponent_3_Long_Language(
     const uint8_t language)
 {
     if (!m_updater) return;
+    m_updater->ForEachServiceComponentUpdater_GlobalID(
+        service_component_global_id,
+        [language](ServiceComponentUpdater& sc_u) {
+            sc_u.SetLanguage(language);
+        }
+    );
     m_updater->ForEachServiceComponentUpdater_GlobalID(
         service_component_global_id,
         [language](ServiceComponentUpdater& sc_u) {
@@ -470,6 +482,7 @@ void Radio_FIG_Handler::OnSubchannel_2_FEC(
 // fig 0/17 - Programme type
 void Radio_FIG_Handler::OnService_1_ProgrammeType(
     const ServiceId service_id,
+    const uint8_t programme_type)
     const uint8_t programme_type)
 {
     if (!m_updater) return;

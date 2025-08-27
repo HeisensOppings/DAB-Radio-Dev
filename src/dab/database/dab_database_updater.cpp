@@ -72,6 +72,7 @@ bool EnsembleUpdater::IsComplete() {
 const uint8_t SERVICE_FLAG_LABEL        = 0b00100000;
 const uint8_t SERVICE_FLAG_PROGRAM_TYPE = 0b00010000;
 const uint8_t SERVICE_FLAG_SHORT_LABEL  = 0b00001000;
+const uint8_t SERVICE_FLAG_SHORT_LABEL  = 0b00001000;
 const uint8_t SERVICE_FLAG_REQUIRED     = 0b00000000;
 
 UpdateResult ServiceUpdater::SetLabel(std::string_view label) {
