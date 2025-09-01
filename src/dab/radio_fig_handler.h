@@ -22,7 +22,8 @@ public:
     void OnEnsemble_1_ID(
         const EnsembleId ensemble_id,
         const uint8_t change_flags, const uint8_t alarm_flag,
-        const uint8_t cif_upper, const uint8_t cif_lower) override;
+        const uint8_t cif_upper, const uint8_t cif_lower,
+        const uint8_t occurance_change) override;
     // fig 0/1 - subchannel configuration
     // Short form for UEP
     void OnSubchannel_1_Short(
@@ -130,6 +131,11 @@ public:
         const ServiceId service_id,
         const asu_flags_t asu_flags,
         const cluster_id_t* buf, const uint8_t N) override;
+    // fig 0/19 - Announcement switching
+    void OnAnnouncementSwitching_1(
+        const cluster_id_t cluster_id,
+        const asw_flags_t asw_flags, const new_flags_t new_flag,
+        const subchannel_id_t subchannel_id) override;
     // fig 0/21 - Alternate frequency information
     void OnFrequencyInformation_1_Ensemble(
         const EnsembleId ensemble_id,

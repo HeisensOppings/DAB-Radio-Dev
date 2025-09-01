@@ -402,6 +402,21 @@ DAB_Database_Updater::DAB_Database_Updater() {
     m_ensemble_updater = std::make_unique<EnsembleUpdater>(*(m_db.get()), *(m_stats.get()));
 }
 
+void DAB_Database_Updater::reset()
+{
+    m_db->reset();
+    m_stats->reset();
+    m_ensemble_updater = std::make_unique<EnsembleUpdater>(*(m_db.get()), *(m_stats.get()));
+    m_service_updaters.clear();
+    m_service_component_updaters.clear();
+    m_subchannel_updaters.clear();
+    m_link_service_updaters.clear();
+    m_fm_service_updaters.clear();
+    m_drm_service_updaters.clear();
+    m_amss_service_updaters.clear();
+    m_other_ensemble_updaters.clear();
+}
+
 ServiceUpdater& DAB_Database_Updater::GetServiceUpdater(const ServiceId service_id) {
     const auto uuid = service_id.get_unique_identifier();
     auto& updater = find_or_insert_updater(

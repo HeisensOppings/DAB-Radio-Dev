@@ -18,7 +18,8 @@ static auto _logger = DAB_LOG_REGISTER(TAG);
 void Radio_FIG_Handler::OnEnsemble_1_ID(
     const EnsembleId ensemble_id,
     const uint8_t change_flags, const uint8_t alarm_flag,
-    const uint8_t cif_upper, const uint8_t cif_lower) 
+    const uint8_t cif_upper, const uint8_t cif_lower,
+    const uint8_t occurance_change) 
 {
     if (m_updater) {
         auto& u = m_updater->GetEnsembleUpdater();    
@@ -28,6 +29,9 @@ void Radio_FIG_Handler::OnEnsemble_1_ID(
     if (m_misc_info) {
         m_misc_info->cif_counter.upper_count = cif_upper;
         m_misc_info->cif_counter.lower_count = cif_lower;
+        m_misc_info->change_flags = change_flags;
+        m_misc_info->alarm_flag = alarm_flag;
+        m_misc_info->occurance_change = occurance_change;
     }
 }
 
@@ -505,6 +509,20 @@ void Radio_FIG_Handler::OnService_2_AnnouncementSupport(
 
     for (uint8_t i = 0; i < N; i++) {
         s_u.AddClusterID(buf[i]);
+    }
+}
+
+// fig 0/19 - Announcement switching
+void Radio_FIG_Handler::OnAnnouncementSwitching_1(
+    const cluster_id_t cluster_id,
+    const asw_flags_t asw_flags, const new_flags_t new_flag,
+    const subchannel_id_t subchannel_id)
+{
+    if (m_misc_info) {
+        auto& announcement = m_misc_info->announcements[cluster_id];
+        announcement.asw_flags = asw_flags;
+        announcement.new_flag = new_flag;
+        announcement.subchannel_id = subchannel_id;
     }
 }
 

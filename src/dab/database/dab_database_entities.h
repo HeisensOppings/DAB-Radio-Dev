@@ -57,6 +57,20 @@ enum class UserApplicationType: uint16_t {  // Value passed in 11bit field
     UNDEFINED = 0xFFFF,
 };
 
+enum class AnnouncementFlag : uint16_t {
+    ALARM           = 1 << 0,  // b0 Road Traffic flash
+    TRAFFIC_NEWS    = 1 << 1,  // b1 Road Traffic flash
+    TRANSPORT_NEWS  = 1 << 2,  // b2 Transport flash
+    WARNING         = 1 << 3,  // b3 Warning/Service
+    NEWS            = 1 << 4,  // b4 News flash
+    WEATHER         = 1 << 5,  // b5 Area weather flash
+    EVENT_ANN       = 1 << 6,  // b6 Event announcement
+    SPECIAL_EVENT   = 1 << 7,  // b7 Special event
+    RADIO_INFO      = 1 << 8,  // b8 Programme Information
+    SPORTS_NEWS     = 1 << 9,  // b9 Sport report
+    FINANCIAL_NEWS  = 1 << 10, // b10 Financial report
+};
+
 struct ExtendedLabel {
     // NOTE: FIG 2 labels can be in UTF-8 or UCS2, and are sent in segments.
     uint8_t toggle_flag = 0;

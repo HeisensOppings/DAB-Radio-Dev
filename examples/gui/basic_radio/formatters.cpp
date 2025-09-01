@@ -125,3 +125,33 @@ const char* GetMPEGSurroundString(MPEG_Surround mpeg) {
         return "Unknown";
     }
 }
+
+const char* GetAnnouncementString(asw_flags_t asw_flag)
+{
+    switch (static_cast<AnnouncementFlag>(asw_flag)) {
+    case AnnouncementFlag::ALARM:
+        return "Alarm";
+    case AnnouncementFlag::TRAFFIC_NEWS:
+        return "Road Traffic flash";
+    case AnnouncementFlag::TRANSPORT_NEWS:
+        return "Transport flash";
+    case AnnouncementFlag::WARNING:
+        return "Warning/Service";
+    case AnnouncementFlag::NEWS:
+        return "News flash";
+    case AnnouncementFlag::WEATHER:
+        return "Area weather flash";
+    case AnnouncementFlag::EVENT_ANN:
+        return "Event announcement";
+    case AnnouncementFlag::SPECIAL_EVENT:
+        return "Special event";
+    case AnnouncementFlag::RADIO_INFO:
+        return "Programme Information";
+    case AnnouncementFlag::SPORTS_NEWS:
+        return "Sport report";
+    case AnnouncementFlag::FINANCIAL_NEWS:
+        return "Financial report";
+    default:
+        return "Unknown";
+    }
+}

@@ -28,6 +28,13 @@ struct DatabaseUpdaterGlobalStatistics {
     bool operator!=(const DatabaseUpdaterGlobalStatistics& other) const {
         return !(*this == other);
     }
+    void reset() {
+        nb_total = 0;
+        nb_pending = 0;
+        nb_completed = 0;
+        nb_conflicts = 0;
+        nb_updates = 0;
+    }
 };
 
 enum class UpdateResult { SUCCESS, CONFLICT, NO_CHANGE };
@@ -287,6 +294,7 @@ private:
     std::vector<OtherEnsembleUpdater> m_other_ensemble_updaters;
 public:
     explicit DAB_Database_Updater();
+    void reset();
     EnsembleUpdater& GetEnsembleUpdater() { return *(m_ensemble_updater.get()); }
     ServiceUpdater& GetServiceUpdater(const ServiceId service_id);
     ServiceComponentUpdater& GetServiceComponentUpdater_Service(const ServiceId service_id, const uint16_t unique_id);

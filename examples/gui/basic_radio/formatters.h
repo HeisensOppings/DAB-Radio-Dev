@@ -17,3 +17,4 @@ const char* GetUserApplicationTypeString(const user_application_type_t applicati
 const char* GetCountryString(extended_country_id_t ecc, country_id_t country_id);
 const char* GetAACDescriptionString(bool is_spectral_band_replication, bool is_parametric_stereo);
 const char* GetMPEGSurroundString(MPEG_Surround mpeg);
+const char* GetAnnouncementString(asw_flags_t asw_flag);

@@ -287,16 +287,25 @@ void FIG_Processor::ProcessFIG_Type_0_Ext_0(
     const uint8_t change_flags = (buf[2] & 0b11000000) >> 6;
     const uint8_t alarm_flag =   (buf[2] & 0b00100000) >> 5;
 
+    if (change_flags != 0)
+    {
+        const int nb_field_bytes = 5;
+        if (N != nb_field_bytes) {
+            LOG_ERROR("fig 0/0 Length doesn't match expectations ({}/{})",
+                nb_field_bytes, N);
+            return;
+        }
+    }
+
     // CIF mod 5000 counter
     // mod 20 counter
     const uint8_t cif_upper =    (buf[2] & 0b00011111) >> 0;
     // mod 250 counter
     const uint8_t cif_lower =    (buf[3] & 0b11111111) >> 0;
-
-    // TODO: For some reason we don't get this byte
-    // Perhaps it is because no changes occur, but this isn't stated in standard
-    // const uint8_t occurance_change = 
-    //                              (buf[4] & 0b11111111) >> 0;
+    
+    uint8_t occurance_change = 0;
+    if (change_flags != 0)
+        occurance_change =       (buf[4] & 0b11111111) >> 0;
 
     LOG_MESSAGE("fig 0/0 ensemble_id={:X} change={} alarm={} cif={}|{}",
         eid.value,
@@ -306,7 +315,8 @@ void FIG_Processor::ProcessFIG_Type_0_Ext_0(
     m_handler->OnEnsemble_1_ID(
         eid,
         change_flags, alarm_flag, 
-        cif_upper, cif_lower);
+        cif_upper, cif_lower,
+        occurance_change);
 }
 
 // Subchannel for stream mode MSC
@@ -1443,16 +1453,22 @@ void FIG_Processor::ProcessFIG_Type_0_Ext_19(const FIG_Header_Type_0 header, tcb
         const uint8_t cluster_id =                       (b[0]);
         const uint16_t asw_flags = (static_cast<uint16_t>(b[1] << 8)) |
                                                          (b[2]);
-        const uint8_t new_flags =                        (b[3] & 0b10000000) >> 7;
+        const uint8_t new_flag =                         (b[3] & 0b10000000) >> 7;
         const uint8_t Rfa =                              (b[3] & 0b01000000) >> 6;
         const uint8_t subchannel_id =                    (b[3] & 0b00111111);
 
-        LOG_MESSAGE("fig 0/19 cluster_id={:>3} asw_flags={} new_flags={} Rfa={} subchannel_id={}",
+        LOG_MESSAGE("fig 0/19 cluster_id={:>3} asw_flags={} new_flag={} Rfa={} subchannel_id={}",
             cluster_id,
             asw_flags,
-            new_flags,
+            new_flag,
             Rfa,
             subchannel_id);
+
+        m_handler->OnAnnouncementSwitching_1(
+            cluster_id,
+            asw_flags, new_flag,
+            subchannel_id
+        );
 
         curr_byte += nb_data_bytes;
     }

@@ -17,6 +17,8 @@ typedef uint8_t  language_id_t;                 // 8bits
 typedef uint8_t  programme_id_t;                // 5bits
 typedef uint16_t packet_addr_t;                 // 10bits
 typedef uint16_t asu_flags_t;                   // 16bits
+typedef uint16_t asw_flags_t;                   // 16bits
+typedef uint8_t  new_flags_t;                   // 1bits
 typedef uint8_t  cluster_id_t;                  // 8bits
 typedef uint8_t  dg_flag_t;                     // 1bits
 typedef uint16_t user_application_type_t;       // 11bits
