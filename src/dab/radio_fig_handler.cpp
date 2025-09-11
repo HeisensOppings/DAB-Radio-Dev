@@ -183,6 +183,7 @@ void Radio_FIG_Handler::OnServiceComponent_2_PacketDataType(
     sc_u->SetTransportMode(TransportMode::PACKET_MODE_DATA);
     sc_u->SetGlobalID(service_component_global_id);
     sc_u->SetPacketAddr(packet_address);
+    sc_u->SetDGFlag(dg_flag);
 
     switch (data_service_type) {
     case 5:

@@ -142,7 +142,7 @@ void BasicRadio::UpdateAfterProcessing() {
         // DOC: EN 300 401
         // Clause: 5.3.5 FEC for MSC packet mode
         // Data packet channels require the FEC scheme to be defined for outer encoding
-        if (mode == TransportMode::PACKET_MODE_DATA && (subchannel.fec_scheme != FEC_Scheme::UNDEFINED)) {
+        if (mode == TransportMode::PACKET_MODE_DATA /* && (subchannel.fec_scheme != FEC_Scheme::UNDEFINED) */) {
             LOG_MESSAGE("Added data packet subchannel {}", subchannel.id);
             auto channel = std::make_shared<Basic_Data_Packet_Channel>(m_params, subchannel, packet_addr, data_type);
             m_msc_runners.insert({ subchannel.id, channel });

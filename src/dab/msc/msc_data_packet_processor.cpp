@@ -72,7 +72,8 @@ size_t MSC_Data_Packet_Processor::ReadPacket(tcb::span<const uint8_t> buf, uint1
     }
 
     if( address != packet_addr) {
-        LOG_ERROR("Packet address mismatch: expected {}, got {}", packet_addr, address);
+        // NOTE: Multiple data packets can share the same subchannel, separated by packet_addr
+        // LOG_ERROR("Packet address mismatch: expected {}, got {}", packet_addr, address);
         return packet_length;
     }
 

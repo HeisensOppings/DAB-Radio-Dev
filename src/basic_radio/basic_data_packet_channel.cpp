@@ -21,7 +21,7 @@ Basic_Data_Packet_Channel::Basic_Data_Packet_Channel(const DAB_Parameters& param
 : m_params(params), m_subchannel(subchannel), m_packet_addr(packet_addr), m_type(type)
 {
     assert(subchannel.is_complete);
-    assert(subchannel.fec_scheme != FEC_Scheme::UNDEFINED);
+    // assert(subchannel.fec_scheme != FEC_Scheme::UNDEFINED);
     m_msc_rs_data_packet_processor = nullptr;
     m_msc_decoder = std::make_unique<MSC_Decoder>(m_subchannel);
     m_msc_data_packet_processor = std::make_unique<MSC_Data_Packet_Processor>();
